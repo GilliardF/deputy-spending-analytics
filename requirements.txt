@@ -1,4 +1,4 @@
-# Requisitos para deploy no Streamlit Cloud
+# Requisitos para deploy no Streamlit Cloud e ETL no GCP
 streamlit>=1.42.0
 numpy>=2.2.3
 pandas>=2.2.3
@@ -7,3 +7,6 @@ plotly-express>=0.4.1
 scikit-learn>=1.0.2
 setuptools
 wheel
+python-dotenv>=1.0.0
+google-cloud-storage>=2.14.0
+google-cloud-bigquery>=3.17.0

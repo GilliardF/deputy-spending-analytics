@@ -1,0 +1,15 @@
+relationship rel_despesas_deputado
+	fromColumn: F_Despesas.idDeputado
+	toColumn: D_Deputado.idDeputado
+
+relationship rel_despesas_calendario
+	fromColumn: F_Despesas.dataDocumento
+	toColumn: D_Calendario.Data
+
+relationship rel_despesas_tipodespesa
+	fromColumn: F_Despesas.idTipoDespesa
+	toColumn: D_TipoDespesa.idTipoDespesa
+
+relationship rel_despesas_fornecedor
+	fromColumn: F_Despesas.cnpjCpfFornecedor
+	toColumn: D_Fornecedor.cnpjCpfFornecedor

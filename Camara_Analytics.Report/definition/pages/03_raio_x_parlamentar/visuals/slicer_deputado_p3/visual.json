@@ -1,0 +1,59 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.3.0/schema.json",
+  "name": "slicer_deputado_p3",
+  "position": {
+    "x": 20,
+    "y": 20,
+    "z": 1000,
+    "width": 320,
+    "height": 100,
+    "tabOrder": 1000
+  },
+  "visual": {
+    "visualType": "slicer",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "D_Deputado"
+                    }
+                  },
+                  "Property": "txNomeParlamentar"
+                }
+              },
+              "queryRef": "D_Deputado.txNomeParlamentar",
+              "nativeQueryRef": "txNomeParlamentar"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "visualContainerObjects": {
+    "title": [
+      {
+        "properties": {
+          "text": {
+            "expr": {
+              "Literal": {
+                "Value": "'Selecione o Parlamentar'"
+              }
+            }
+          },
+          "visible": {
+            "expr": {
+              "Literal": {
+                "Value": "true"
+              }
+            }
+          }
+        }
+      }
+    ]
+  }
+}

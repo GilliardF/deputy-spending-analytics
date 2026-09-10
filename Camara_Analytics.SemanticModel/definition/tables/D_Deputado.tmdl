@@ -1,0 +1,124 @@
+table D_Deputado
+	lineageTag: 11000000-0000-0000-0000-000000000001
+
+	column idDeputado
+		dataType: int64
+		isKey
+		formatString: 0
+		lineageTag: 11000000-0000-0000-0000-000000000002
+		summarizeBy: none
+		sourceColumn: idDeputado
+
+		annotation SummarizationSetBy = Automatic
+
+	column txNomeParlamentar
+		dataType: string
+		lineageTag: 11000000-0000-0000-0000-000000000003
+		summarizeBy: none
+		sourceColumn: txNomeParlamentar
+
+	column nomeCivil
+		dataType: string
+		lineageTag: 11000000-0000-0000-0000-000000000004
+		summarizeBy: none
+		sourceColumn: nomeCivil
+
+	column siglaPartido
+		dataType: string
+		lineageTag: 11000000-0000-0000-0000-000000000005
+		summarizeBy: none
+		sourceColumn: siglaPartido
+
+	column siglaUF
+		dataType: string
+		lineageTag: 11000000-0000-0000-0000-000000000006
+		summarizeBy: none
+		sourceColumn: siglaUF
+
+	column siglaSexo
+		dataType: string
+		lineageTag: 11000000-0000-0000-0000-000000000007
+		summarizeBy: none
+		sourceColumn: siglaSexo
+
+	column descricaoSexo
+		dataType: string
+		lineageTag: 11000000-0000-0000-0000-000000000008
+		summarizeBy: none
+		sourceColumn: descricaoSexo
+
+	column urlFoto
+		dataType: string
+		dataCategory: ImageUrl
+		lineageTag: 11000000-0000-0000-0000-000000000009
+		summarizeBy: none
+		sourceColumn: urlFoto
+
+	column legislaturasAssociadas
+		dataType: string
+		lineageTag: 11000000-0000-0000-0000-000000000010
+		summarizeBy: none
+		sourceColumn: legislaturasAssociadas
+
+	column dataNascimento
+		dataType: dateTime
+		formatString: dd/mm/yyyy
+		lineageTag: 11000000-0000-0000-0000-000000000011
+		summarizeBy: none
+		sourceColumn: dataNascimento
+
+	column ufNascimento
+		dataType: string
+		lineageTag: 11000000-0000-0000-0000-000000000012
+		summarizeBy: none
+		sourceColumn: ufNascimento
+
+	column municipioNascimento
+		dataType: string
+		lineageTag: 11000000-0000-0000-0000-000000000013
+		summarizeBy: none
+		sourceColumn: municipioNascimento
+
+	partition D_Deputado = m
+		mode: import
+		source =
+			let
+			    caminhoLocal1 = "./data/deputados.csv",
+			    caminhoLocal2 = "../data/deputados.csv",
+			    caminhoLocal3 = "./data/sample/deputados.csv",
+			    arquivoBin = try File.Contents(caminhoLocal1)
+			                 otherwise try File.Contents(caminhoLocal2)
+			                 otherwise try File.Contents(caminhoLocal3)
+			                 otherwise Web.Contents("https://dadosabertos.camara.leg.br/arquivos/deputados/csv/deputados.csv"),
+			    csv = Csv.Document(arquivoBin, [Delimiter=";", Encoding=65001, QuoteStyle=QuoteStyle.Csv]),
+			    promove = Table.PromoteHeaders(csv, [PromoteAllScalars=true]),
+			    addId = Table.AddColumn(promove, "idDeputado", each 
+			        try Number.FromText(Text.AfterDelimiter([uri], "/", {0, RelativePosition.FromEnd}))
+			        otherwise null, Int64.Type),
+			    filtraValidos = Table.SelectRows(addId, each [idDeputado] <> null),
+			    addFoto = Table.AddColumn(filtraValidos, "urlFoto", each 
+			        "https://www.camara.leg.br/internet/deputado/bandep/" & Text.From([idDeputado]) & ".jpg", type text),
+			    addSexoDesc = Table.AddColumn(addFoto, "descricaoSexo", each 
+			        if [siglaSexo] = "F" then "Feminino" else "Masculino", type text),
+			    renomeia = Table.RenameColumns(addSexoDesc, {
+			        {"nome", "txNomeParlamentar"}
+			    }),
+			    addPartido = Table.AddColumn(renomeia, "siglaPartido", each try [siglaPartido] otherwise "DIVERSOS", type text),
+			    addUF = Table.AddColumn(addPartido, "siglaUF", each try [ufNascimento] otherwise "BR", type text),
+			    addLegs = Table.AddColumn(addUF, "legislaturasAssociadas", each 
+			        let
+			            ini = try Text.From([idLegislaturaInicial]) otherwise "",
+			            fim = try Text.From([idLegislaturaFinal]) otherwise ""
+			        in
+			            if ini = fim then ini & "ª Legislatura"
+			            else ini & "ª à " & fim & "ª Legislatura", type text),
+			    seleciona = Table.SelectColumns(addLegs, {
+			        "idDeputado", "txNomeParlamentar", "nomeCivil", "siglaPartido", "siglaUF",
+			        "siglaSexo", "descricaoSexo", "urlFoto", "legislaturasAssociadas", "dataNascimento",
+			        "ufNascimento", "municipioNascimento"
+			    }, MissingField.Ignore),
+			    trataDataNasc = Table.TransformColumns(seleciona, {
+			        {"dataNascimento", each try DateTime.Date(DateTime.FromText(_)) otherwise null, type nullable date}
+			    })
+			in
+			    trataDataNasc

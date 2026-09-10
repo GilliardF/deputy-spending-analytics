@@ -1,0 +1,101 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.3.0/schema.json",
+  "name": "table_concentracao_redes",
+  "position": {
+    "x": 650,
+    "y": 140,
+    "z": 1000,
+    "width": 610,
+    "height": 270,
+    "tabOrder": 1000
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "D_Fornecedor"
+                    }
+                  },
+                  "Property": "nomeFornecedor"
+                }
+              },
+              "queryRef": "D_Fornecedor.nomeFornecedor",
+              "nativeQueryRef": "nomeFornecedor"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "D_Fornecedor"
+                    }
+                  },
+                  "Property": "tipoDocumentoFornecedor"
+                }
+              },
+              "queryRef": "D_Fornecedor.tipoDocumentoFornecedor",
+              "nativeQueryRef": "tipoDocumentoFornecedor"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Qtd Deputados Ativos"
+                }
+              },
+              "queryRef": "_Medidas.Qtd Deputados Ativos",
+              "nativeQueryRef": "Qtd Deputados Ativos"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Total Gasto Hist\u00f3rico"
+                }
+              },
+              "queryRef": "_Medidas.Total Gasto Hist\u00f3rico",
+              "nativeQueryRef": "Total Gasto Hist\u00f3rico"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Fornecedores Atendendo M\u00faltiplos Parlamentares (Redes de Contato)'"
+                }
+              }
+            },
+            "visible": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

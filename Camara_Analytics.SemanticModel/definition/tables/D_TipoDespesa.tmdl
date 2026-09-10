@@ -1,0 +1,60 @@
+table D_TipoDespesa
+	lineageTag: 40000000-0000-0000-0000-000000000001
+
+	column idTipoDespesa
+		dataType: int64
+		isKey
+		formatString: 0
+		lineageTag: 40000000-0000-0000-0000-000000000002
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [idTipoDespesa]
+
+		annotation SummarizationSetBy = Automatic
+
+	column tipoDespesa
+		dataType: string
+		lineageTag: 40000000-0000-0000-0000-000000000003
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [tipoDespesa]
+
+	column macroCategoria
+		dataType: string
+		lineageTag: 40000000-0000-0000-0000-000000000004
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [macroCategoria]
+
+	partition D_TipoDespesa = calculated
+		mode: import
+		source =
+			DATATABLE(
+				"idTipoDespesa", INTEGER,
+				"tipoDespesa", STRING,
+				"macroCategoria", STRING,
+				{
+					{ 1, "MANUTENÇÃO DE ESCRITÓRIO DE APOIO À ATIVIDADE PARLAMENTAR", "Apoio & Escritório" },
+					{ 2, "SERVIÇOS POSTAIS (HISTÓRICO)", "Apoio & Escritório" },
+					{ 3, "COMBUSTÍVEIS E LUBRIFICANTES", "Combustíveis & Lubrificantes" },
+					{ 4, "CONSULTORIAS, PESQUISAS E TRABALHOS TÉCNICOS", "Consultorias & Pesquisas" },
+					{ 5, "DIVULGAÇÃO DA ATIVIDADE PARLAMENTAR", "Divulgação Parlamentar" },
+					{ 6, "INDENIZAÇÃO DE TRANSPORTE E OUTRAS DESPESAS", "Passagens & Locomoção" },
+					{ 7, "PARTICIPAÇÃO EM CURSO OU EVENTO (HISTÓRICO)", "Segurança & Outros" },
+					{ 8, "SERVIÇO DE SEGURANÇA PRESTADO POR EMPRESA ESPECIALIZADA", "Segurança & Outros" },
+					{ 9, "PASSAGEM AÉREA - REEMBOLSO", "Passagens & Locomoção" },
+					{ 10, "TELEFONIA", "Apoio & Escritório" },
+					{ 11, "SERVIÇOS POSTAIS", "Apoio & Escritório" },
+					{ 12, "ASSINATURA DE PUBLICAÇÕES", "Apoio & Escritório" },
+					{ 13, "FORNECIMENTO DE ALIMENTAÇÃO DO PARLAMENTAR", "Alimentação & Hospedagem" },
+					{ 14, "HOSPEDAGEM, EXCETO DO PARLAMENTAR NO DISTRITO FEDERAL", "Alimentação & Hospedagem" },
+					{ 119, "LOCAÇÃO OU FRETAMENTO DE AERONAVES", "Passagens & Locomoção" },
+					{ 120, "LOCAÇÃO OU FRETAMENTO DE VEÍCULOS AUTOMOTORES", "Passagens & Locomoção" },
+					{ 121, "LOCAÇÃO OU FRETAMENTO DE EMBARCAÇÕES", "Passagens & Locomoção" },
+					{ 122, "SERVIÇO DE TÁXI, PEDÁGIO E ESTACIONAMENTO", "Passagens & Locomoção" },
+					{ 123, "PASSAGENS TERRESTRES, MARÍTIMAS OU FLUVIAIS", "Passagens & Locomoção" },
+					{ 137, "PARTICIPAÇÃO EM CURSO, PALESTRA OU EVENTO SIMILAR", "Segurança & Outros" },
+					{ 145, "AQUISIÇÃO DE TOKENS E CERTIFICADOS DIGITAIS", "Apoio & Escritório" },
+					{ 999, "OUTRAS DESPESAS INDENIZATÓRIAS", "Outras Despesas" }
+				}
+			)

@@ -1,0 +1,8 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/1.3.0/schema.json",
+  "name": "01_linha_tempo_historica",
+  "displayName": "Linha do Tempo Hist\u00f3rica & Macrotend\u00eancias",
+  "displayOption": "FitToPage",
+  "width": 1280,
+  "height": 720
+}

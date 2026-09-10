@@ -1,0 +1,77 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/1.3.0/schema.json",
+  "name": "chart_gastos_macro",
+  "position": {
+    "x": 790,
+    "y": 430,
+    "z": 1000,
+    "width": 470,
+    "height": 270,
+    "tabOrder": 1000
+  },
+  "visual": {
+    "visualType": "barChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "D_TipoDespesa"
+                    }
+                  },
+                  "Property": "macroCategoria"
+                }
+              },
+              "queryRef": "D_TipoDespesa.macroCategoria",
+              "nativeQueryRef": "macroCategoria"
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Total Gasto Hist\u00f3rico"
+                }
+              },
+              "queryRef": "_Medidas.Total Gasto Hist\u00f3rico",
+              "nativeQueryRef": "Total Gasto Hist\u00f3rico"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Gastos por Macro-Categoria'"
+                }
+              }
+            },
+            "visible": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,183 @@
+table D_Calendario
+	lineageTag: 20000000-0000-0000-0000-000000000001
+
+	column Data
+		dataType: dateTime
+		isKey
+		formatString: dd/mm/yyyy
+		lineageTag: 20000000-0000-0000-0000-000000000002
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Date]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Ano
+		dataType: int64
+		formatString: 0
+		lineageTag: 20000000-0000-0000-0000-000000000003
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Ano]
+
+		annotation SummarizationSetBy = Automatic
+
+	column NumMes
+		dataType: int64
+		formatString: 0
+		lineageTag: 20000000-0000-0000-0000-000000000004
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [NumMes]
+
+		annotation SummarizationSetBy = Automatic
+
+	column NomeMes
+		dataType: string
+		lineageTag: 20000000-0000-0000-0000-000000000005
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [NomeMes]
+		sortByColumn: NumMes
+
+	column MesAno
+		dataType: string
+		lineageTag: 20000000-0000-0000-0000-000000000006
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [MesAno]
+		sortByColumn: MesAnoOrdem
+
+	column MesAnoOrdem
+		dataType: int64
+		formatString: 0
+		lineageTag: 20000000-0000-0000-0000-000000000007
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [MesAnoOrdem]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Trimestre
+		dataType: string
+		lineageTag: 20000000-0000-0000-0000-000000000008
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Trimestre]
+
+	column TrimestreAno
+		dataType: string
+		lineageTag: 20000000-0000-0000-0000-000000000009
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [TrimestreAno]
+
+	column DiaDaSemana
+		dataType: int64
+		formatString: 0
+		lineageTag: 20000000-0000-0000-0000-000000000010
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [DiaDaSemana]
+
+		annotation SummarizationSetBy = Automatic
+
+	column NomeDiaSemana
+		dataType: string
+		lineageTag: 20000000-0000-0000-0000-000000000011
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [NomeDiaSemana]
+		sortByColumn: DiaDaSemana
+
+	column Legislatura
+		dataType: string
+		lineageTag: 20000000-0000-0000-0000-000000000012
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Legislatura]
+		sortByColumn: NumLegislatura
+
+	column NumLegislatura
+		dataType: int64
+		formatString: 0
+		lineageTag: 20000000-0000-0000-0000-000000000013
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [NumLegislatura]
+
+		annotation SummarizationSetBy = Automatic
+
+	column FlagFimDeSemana
+		dataType: int64
+		formatString: 0
+		lineageTag: 20000000-0000-0000-0000-000000000014
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [FlagFimDeSemana]
+
+		annotation SummarizationSetBy = Automatic
+
+	column FlagRecessoParlamentar
+		dataType: int64
+		formatString: 0
+		lineageTag: 20000000-0000-0000-0000-000000000015
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [FlagRecessoParlamentar]
+
+		annotation SummarizationSetBy = Automatic
+
+	column FlagUltimos30DiasAno
+		dataType: int64
+		formatString: 0
+		lineageTag: 20000000-0000-0000-0000-000000000016
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [FlagUltimos30DiasAno]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition D_Calendario = calculated
+		mode: import
+		source =
+			VAR _MinAno = 2008
+			VAR _MaxAno = 2026
+			RETURN
+			ADDCOLUMNS(
+				CALENDAR(DATE(_MinAno, 1, 1), DATE(_MaxAno, 12, 31)),
+				"Ano", YEAR([Date]),
+				"NumMes", MONTH([Date]),
+				"NomeMes", FORMAT([Date], "mmmm", "pt-BR"),
+				"MesAno", FORMAT([Date], "mmm/yyyy", "pt-BR"),
+				"MesAnoOrdem", YEAR([Date]) * 100 + MONTH([Date]),
+				"Trimestre", "T" & FORMAT([Date], "q"),
+				"TrimestreAno", "T" & FORMAT([Date], "q") & "/" & YEAR([Date]),
+				"DiaDaSemana", WEEKDAY([Date], 2),
+				"NomeDiaSemana", FORMAT([Date], "dddd", "pt-BR"),
+				"Legislatura",
+					SWITCH(
+						TRUE(),
+						YEAR([Date]) >= 2027, "58ª Legislatura (2027-2030)",
+						YEAR([Date]) >= 2023, "57ª Legislatura (2023-2026)",
+						YEAR([Date]) >= 2019, "56ª Legislatura (2019-2022)",
+						YEAR([Date]) >= 2015, "55ª Legislatura (2015-2018)",
+						YEAR([Date]) >= 2011, "54ª Legislatura (2011-2014)",
+						YEAR([Date]) >= 2007, "53ª Legislatura (2007-2010)",
+						"Outras Legislaturas"
+					),
+				"NumLegislatura",
+					SWITCH(
+						TRUE(),
+						YEAR([Date]) >= 2027, 58,
+						YEAR([Date]) >= 2023, 57,
+						YEAR([Date]) >= 2019, 56,
+						YEAR([Date]) >= 2015, 55,
+						YEAR([Date]) >= 2011, 54,
+						YEAR([Date]) >= 2007, 53,
+						50
+					),
+				"FlagFimDeSemana", IF(WEEKDAY([Date], 2) IN {6, 7}, 1, 0),
+				"FlagRecessoParlamentar", IF(MONTH([Date]) IN {1, 7}, 1, 0),
+				"FlagUltimos30DiasAno", IF(MONTH([Date]) = 12, 1, 0)
+			)

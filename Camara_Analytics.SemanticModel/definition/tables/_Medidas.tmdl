@@ -1,0 +1,369 @@
+table _Medidas
+	lineageTag: 50000000-0000-0000-0000-000000000001
+
+	measure 'Total Gasto Histórico' = SUM('F_Despesas'[valorLiquido])
+		formatString: "R$"\ #,##0.00;-"R$"\ #,##0.00;"R$"\ 0.00
+		displayFolder: 1. Inteligência Temporal & Histórico
+		lineageTag: 50000000-0000-0000-0000-000000000002
+
+	measure 'Total Gasto Ano Anterior' =
+			CALCULATE(
+				[Total Gasto Histórico],
+				SAMEPERIODLASTYEAR('D_Calendario'[Data])
+			)
+		formatString: "R$"\ #,##0.00;-"R$"\ #,##0.00;"R$"\ 0.00
+		displayFolder: 1. Inteligência Temporal & Histórico
+		lineageTag: 50000000-0000-0000-0000-000000000003
+
+	measure 'Gasto YoY %' =
+			VAR _Atual = [Total Gasto Histórico]
+			VAR _Anterior = [Total Gasto Ano Anterior]
+			RETURN
+				IF(
+					NOT ISBLANK(_Anterior) && _Anterior > 0,
+					DIVIDE(_Atual - _Anterior, _Anterior),
+					BLANK()
+				)
+		formatString: 0.00%
+		displayFolder: 1. Inteligência Temporal & Histórico
+		lineageTag: 50000000-0000-0000-0000-000000000004
+
+	measure 'Gasto por Legislatura' =
+			CALCULATE([Total Gasto Histórico], VALUES('D_Calendario'[Legislatura]))
+		formatString: "R$"\ #,##0.00;-"R$"\ #,##0.00;"R$"\ 0.00
+		displayFolder: 1. Inteligência Temporal & Histórico
+		lineageTag: 50000000-0000-0000-0000-000000000005
+
+	measure 'Média de Gasto Anual por Parlamentar Ativo' =
+			VAR _Total = [Total Gasto Histórico]
+			VAR _QtdAnos = DISTINCTCOUNT('D_Calendario'[Ano])
+			VAR _QtdDep = DISTINCTCOUNT('F_Despesas'[idDeputado])
+			RETURN
+				IF(_QtdAnos > 0 && _QtdDep > 0, DIVIDE(_Total, _QtdDep * _QtdAnos, 0), 0)
+		formatString: "R$"\ #,##0.00;-"R$"\ #,##0.00;"R$"\ 0.00
+		displayFolder: 1. Inteligência Temporal & Histórico
+		lineageTag: 50000000-0000-0000-0000-000000000006
+
+	measure 'Total Documentos' = COUNTROWS('F_Despesas')
+		formatString: #,##0
+		displayFolder: 1. Inteligência Temporal & Histórico
+		lineageTag: 50000000-0000-0000-0000-000000000007
+
+	measure 'Qtd Deputados Ativos' = DISTINCTCOUNT('F_Despesas'[idDeputado])
+		formatString: #,##0
+		displayFolder: 1. Inteligência Temporal & Histórico
+		lineageTag: 50000000-0000-0000-0000-000000000008
+
+	measure 'Ticket Médio por Nota' = DIVIDE([Total Gasto Histórico], [Total Documentos], 0)
+		formatString: "R$"\ #,##0.00;-"R$"\ #,##0.00;"R$"\ 0.00
+		displayFolder: 1. Inteligência Temporal & Histórico
+		lineageTag: 50000000-0000-0000-0000-000000000009
+
+	measure 'Média Despesa Ano Categoria' =
+			CALCULATE(
+				AVERAGE('F_Despesas'[valorLiquido]),
+				ALLEXCEPT('F_Despesas', 'F_Despesas'[numAno], 'F_Despesas'[idTipoDespesa]),
+				'F_Despesas'[valorLiquido] > 0
+			)
+		formatString: "R$"\ #,##0.00;-"R$"\ #,##0.00;"R$"\ 0.00
+		displayFolder: 2. Z-Score Anualizado (Sem Inflação)
+		lineageTag: 50000000-0000-0000-0000-000000000010
+
+	measure 'Desvio Padrão Ano Categoria' =
+			CALCULATE(
+				STDEV.S('F_Despesas'[valorLiquido]),
+				ALLEXCEPT('F_Despesas', 'F_Despesas'[numAno], 'F_Despesas'[idTipoDespesa]),
+				'F_Despesas'[valorLiquido] > 0
+			)
+		formatString: "R$"\ #,##0.00;-"R$"\ #,##0.00;"R$"\ 0.00
+		displayFolder: 2. Z-Score Anualizado (Sem Inflação)
+		lineageTag: 50000000-0000-0000-0000-000000000011
+
+	measure 'Z-Score Anualizado' =
+			VAR _Valor = SELECTEDVALUE('F_Despesas'[valorLiquido])
+			VAR _Media = [Média Despesa Ano Categoria]
+			VAR _Desvio = [Desvio Padrão Ano Categoria]
+			RETURN
+				IF(
+					NOT ISBLANK(_Valor) && NOT ISBLANK(_Desvio) && _Desvio > 0,
+					DIVIDE(_Valor - _Media, _Desvio),
+					BLANK()
+				)
+		formatString: 0.00
+		displayFolder: 2. Z-Score Anualizado (Sem Inflação)
+		lineageTag: 50000000-0000-0000-0000-000000000012
+
+	measure 'Flag Outlier Z-Score' = IF(ABS([Z-Score Anualizado]) > 3, 1, 0)
+		formatString: 0
+		displayFolder: 2. Z-Score Anualizado (Sem Inflação)
+		lineageTag: 50000000-0000-0000-0000-000000000013
+
+	measure 'Qtd Outliers Z-Score' =
+			CALCULATE(
+				COUNTROWS('F_Despesas'),
+				FILTER(
+					'F_Despesas',
+					VAR _Valor = 'F_Despesas'[valorLiquido]
+					VAR _Media = CALCULATE(AVERAGE('F_Despesas'[valorLiquido]), ALLEXCEPT('F_Despesas', 'F_Despesas'[numAno], 'F_Despesas'[idTipoDespesa]), 'F_Despesas'[valorLiquido] > 0)
+					VAR _Desvio = CALCULATE(STDEV.S('F_Despesas'[valorLiquido]), ALLEXCEPT('F_Despesas', 'F_Despesas'[numAno], 'F_Despesas'[idTipoDespesa]), 'F_Despesas'[valorLiquido] > 0)
+					RETURN _Valor > 0 && _Desvio > 0 && DIVIDE(_Valor - _Media, _Desvio) > 3
+				)
+			)
+		formatString: #,##0
+		displayFolder: 2. Z-Score Anualizado (Sem Inflação)
+		lineageTag: 50000000-0000-0000-0000-000000000014
+
+	measure 'Total Gasto Outliers Z-Score' =
+			CALCULATE(
+				SUM('F_Despesas'[valorLiquido]),
+				FILTER(
+					'F_Despesas',
+					VAR _Valor = 'F_Despesas'[valorLiquido]
+					VAR _Media = CALCULATE(AVERAGE('F_Despesas'[valorLiquido]), ALLEXCEPT('F_Despesas', 'F_Despesas'[numAno], 'F_Despesas'[idTipoDespesa]), 'F_Despesas'[valorLiquido] > 0)
+					VAR _Desvio = CALCULATE(STDEV.S('F_Despesas'[valorLiquido]), ALLEXCEPT('F_Despesas', 'F_Despesas'[numAno], 'F_Despesas'[idTipoDespesa]), 'F_Despesas'[valorLiquido] > 0)
+					RETURN _Valor > 0 && _Desvio > 0 && DIVIDE(_Valor - _Media, _Desvio) > 3
+				)
+			)
+		formatString: "R$"\ #,##0.00;-"R$"\ #,##0.00;"R$"\ 0.00
+		displayFolder: 2. Z-Score Anualizado (Sem Inflação)
+		lineageTag: 50000000-0000-0000-0000-000000000015
+
+	measure '% Gasto Outliers Z-Score' = DIVIDE([Total Gasto Outliers Z-Score], [Total Gasto Histórico], 0)
+		formatString: 0.00%
+		displayFolder: 2. Z-Score Anualizado (Sem Inflação)
+		lineageTag: 50000000-0000-0000-0000-000000000016
+
+	measure 'Q1 Ano Categoria' =
+			CALCULATE(
+				PERCENTILE.INC('F_Despesas'[valorLiquido], 0.25),
+				ALLEXCEPT('F_Despesas', 'F_Despesas'[numAno], 'F_Despesas'[idTipoDespesa]),
+				'F_Despesas'[valorLiquido] > 0
+			)
+		formatString: "R$"\ #,##0.00;-"R$"\ #,##0.00;"R$"\ 0.00
+		displayFolder: 3. IQR Anualizado
+		lineageTag: 50000000-0000-0000-0000-000000000017
+
+	measure 'Q3 Ano Categoria' =
+			CALCULATE(
+				PERCENTILE.INC('F_Despesas'[valorLiquido], 0.75),
+				ALLEXCEPT('F_Despesas', 'F_Despesas'[numAno], 'F_Despesas'[idTipoDespesa]),
+				'F_Despesas'[valorLiquido] > 0
+			)
+		formatString: "R$"\ #,##0.00;-"R$"\ #,##0.00;"R$"\ 0.00
+		displayFolder: 3. IQR Anualizado
+		lineageTag: 50000000-0000-0000-0000-000000000018
+
+	measure 'IQR Ano Categoria' = [Q3 Ano Categoria] - [Q1 Ano Categoria]
+		formatString: "R$"\ #,##0.00;-"R$"\ #,##0.00;"R$"\ 0.00
+		displayFolder: 3. IQR Anualizado
+		lineageTag: 50000000-0000-0000-0000-000000000019
+
+	measure 'Limite Superior IQR Anual' = [Q3 Ano Categoria] + 1.5 * [IQR Ano Categoria]
+		formatString: "R$"\ #,##0.00;-"R$"\ #,##0.00;"R$"\ 0.00
+		displayFolder: 3. IQR Anualizado
+		lineageTag: 50000000-0000-0000-0000-000000000020
+
+	measure 'Flag Outlier IQR' = IF(SELECTEDVALUE('F_Despesas'[valorLiquido]) > [Limite Superior IQR Anual], 1, 0)
+		formatString: 0
+		displayFolder: 3. IQR Anualizado
+		lineageTag: 50000000-0000-0000-0000-000000000021
+
+	measure 'Qtd Outliers IQR' =
+			CALCULATE(
+				COUNTROWS('F_Despesas'),
+				FILTER(
+					'F_Despesas',
+					VAR _Q1 = CALCULATE(PERCENTILE.INC('F_Despesas'[valorLiquido], 0.25), ALLEXCEPT('F_Despesas', 'F_Despesas'[numAno], 'F_Despesas'[idTipoDespesa]), 'F_Despesas'[valorLiquido] > 0)
+					VAR _Q3 = CALCULATE(PERCENTILE.INC('F_Despesas'[valorLiquido], 0.75), ALLEXCEPT('F_Despesas', 'F_Despesas'[numAno], 'F_Despesas'[idTipoDespesa]), 'F_Despesas'[valorLiquido] > 0)
+					VAR _IQR = _Q3 - _Q1
+					VAR _LimSup = _Q3 + (1.5 * _IQR)
+					RETURN 'F_Despesas'[valorLiquido] > _LimSup
+				)
+			)
+		formatString: #,##0
+		displayFolder: 3. IQR Anualizado
+		lineageTag: 50000000-0000-0000-0000-000000000022
+
+	measure 'Total Gasto Outliers IQR' =
+			CALCULATE(
+				SUM('F_Despesas'[valorLiquido]),
+				FILTER(
+					'F_Despesas',
+					VAR _Q1 = CALCULATE(PERCENTILE.INC('F_Despesas'[valorLiquido], 0.25), ALLEXCEPT('F_Despesas', 'F_Despesas'[numAno], 'F_Despesas'[idTipoDespesa]), 'F_Despesas'[valorLiquido] > 0)
+					VAR _Q3 = CALCULATE(PERCENTILE.INC('F_Despesas'[valorLiquido], 0.75), ALLEXCEPT('F_Despesas', 'F_Despesas'[numAno], 'F_Despesas'[idTipoDespesa]), 'F_Despesas'[valorLiquido] > 0)
+					VAR _IQR = _Q3 - _Q1
+					VAR _LimSup = _Q3 + (1.5 * _IQR)
+					RETURN 'F_Despesas'[valorLiquido] > _LimSup
+				)
+			)
+		formatString: "R$"\ #,##0.00;-"R$"\ #,##0.00;"R$"\ 0.00
+		displayFolder: 3. IQR Anualizado
+		lineageTag: 50000000-0000-0000-0000-000000000023
+
+	measure '% Gasto Outliers IQR' = DIVIDE([Total Gasto Outliers IQR], [Total Gasto Histórico], 0)
+		formatString: 0.00%
+		displayFolder: 3. IQR Anualizado
+		lineageTag: 50000000-0000-0000-0000-000000000024
+
+	measure 'Qtd Documentos Benford' =
+			VAR _Digito = SELECTEDVALUE('D_Benford'[Digito])
+			RETURN
+				CALCULATE(
+					COUNTROWS('F_Despesas'),
+					'F_Despesas'[PrimeiroDigito] = _Digito,
+					'F_Despesas'[valorLiquido] > 0
+				)
+		formatString: #,##0
+		displayFolder: 4. Lei de Benford
+		lineageTag: 50000000-0000-0000-0000-000000000025
+
+	measure 'Total Documentos Benford Válidos' =
+			CALCULATE(
+				COUNTROWS('F_Despesas'),
+				'F_Despesas'[PrimeiroDigito] >= 1,
+				'F_Despesas'[PrimeiroDigito] <= 9,
+				'F_Despesas'[valorLiquido] > 0,
+				ALLSELECTED('D_Benford')
+			)
+		formatString: #,##0
+		displayFolder: 4. Lei de Benford
+		lineageTag: 50000000-0000-0000-0000-000000000026
+
+	measure 'Frequência Observada' = DIVIDE([Qtd Documentos Benford], [Total Documentos Benford Válidos], 0)
+		formatString: 0.00%
+		displayFolder: 4. Lei de Benford
+		lineageTag: 50000000-0000-0000-0000-000000000027
+
+	measure 'Frequência Teórica Benford' =
+			VAR _Digito = SELECTEDVALUE('D_Benford'[Digito])
+			RETURN
+				IF(
+					NOT ISBLANK(_Digito) && _Digito >= 1 && _Digito <= 9,
+					LOG10(1 + (1 / _Digito)),
+					BLANK()
+				)
+		formatString: 0.00%
+		displayFolder: 4. Lei de Benford
+		lineageTag: 50000000-0000-0000-0000-000000000028
+
+	measure 'Desvio Absoluto Benford' = ABS([Frequência Observada] - [Frequência Teórica Benford])
+		formatString: 0.00%
+		displayFolder: 4. Lei de Benford
+		lineageTag: 50000000-0000-0000-0000-000000000029
+
+	measure 'MAD Benford' =
+			AVERAGEX(
+				VALUES('D_Benford'[Digito]),
+				[Desvio Absoluto Benford]
+			)
+		formatString: 0.0000
+		displayFolder: 4. Lei de Benford
+		lineageTag: 50000000-0000-0000-0000-000000000030
+
+	measure 'Status Conformidade Benford' =
+			VAR _MAD = [MAD Benford]
+			RETURN
+				SWITCH(
+					TRUE(),
+					ISBLANK(_MAD), "Sem Dados",
+					_MAD <= 0.006, "Conformidade Estrita (Normal)",
+					_MAD <= 0.012, "Conformidade Aceitável",
+					_MAD <= 0.015, "Conformidade Marginal",
+					"Alerta Forense (Não Conforme)"
+				)
+		displayFolder: 4. Lei de Benford
+		lineageTag: 50000000-0000-0000-0000-000000000031
+
+	measure 'Qtd Notas Centavos Zero' =
+			CALCULATE(
+				COUNTROWS('F_Despesas'),
+				FILTER(
+					'F_Despesas',
+					'F_Despesas'[valorLiquido] > 0 &&
+					MOD('F_Despesas'[valorLiquido] * 100, 100) = 0
+				)
+			)
+		formatString: #,##0
+		displayFolder: 5. Sinais de Alerta (Red Flags)
+		lineageTag: 50000000-0000-0000-0000-000000000032
+
+	measure 'Total Gasto Centavos Zero' =
+			CALCULATE(
+				SUM('F_Despesas'[valorLiquido]),
+				FILTER(
+					'F_Despesas',
+					'F_Despesas'[valorLiquido] > 0 &&
+					MOD('F_Despesas'[valorLiquido] * 100, 100) = 0
+				)
+			)
+		formatString: "R$"\ #,##0.00;-"R$"\ #,##0.00;"R$"\ 0.00
+		displayFolder: 5. Sinais de Alerta (Red Flags)
+		lineageTag: 50000000-0000-0000-0000-000000000033
+
+	measure '% Notas Centavos Zero' = DIVIDE([Qtd Notas Centavos Zero], [Total Documentos], 0)
+		formatString: 0.00%
+		displayFolder: 5. Sinais de Alerta (Red Flags)
+		lineageTag: 50000000-0000-0000-0000-000000000034
+
+	measure 'Total Gasto Recesso Parlamentar' =
+			CALCULATE(
+				[Total Gasto Histórico],
+				'D_Calendario'[FlagRecessoParlamentar] = 1
+			)
+		formatString: "R$"\ #,##0.00;-"R$"\ #,##0.00;"R$"\ 0.00
+		displayFolder: 5. Sinais de Alerta (Red Flags)
+		lineageTag: 50000000-0000-0000-0000-000000000035
+
+	measure '% Gasto Recesso Parlamentar' = DIVIDE([Total Gasto Recesso Parlamentar], [Total Gasto Histórico], 0)
+		formatString: 0.00%
+		displayFolder: 5. Sinais de Alerta (Red Flags)
+		lineageTag: 50000000-0000-0000-0000-000000000036
+
+	measure 'Total Gasto Fim de Semana' =
+			CALCULATE([Total Gasto Histórico], 'F_Despesas'[FlagFimDeSemana] = 1)
+		formatString: "R$"\ #,##0.00;-"R$"\ #,##0.00;"R$"\ 0.00
+		displayFolder: 5. Sinais de Alerta (Red Flags)
+		lineageTag: 50000000-0000-0000-0000-000000000037
+
+	measure '% Gasto Fim de Semana' = DIVIDE([Total Gasto Fim de Semana], [Total Gasto Histórico], 0)
+		formatString: 0.00%
+		displayFolder: 5. Sinais de Alerta (Red Flags)
+		lineageTag: 50000000-0000-0000-0000-000000000038
+
+	measure 'Total Gasto Últimos 30 Dias Ano' =
+			CALCULATE([Total Gasto Histórico], 'F_Despesas'[FlagUltimos30DiasAno] = 1)
+		formatString: "R$"\ #,##0.00;-"R$"\ #,##0.00;"R$"\ 0.00
+		displayFolder: 5. Sinais de Alerta (Red Flags)
+		lineageTag: 50000000-0000-0000-0000-000000000039
+
+	measure '% Concentração Fim de Ano' = DIVIDE([Total Gasto Últimos 30 Dias Ano], [Total Gasto Histórico], 0)
+		formatString: 0.00%
+		displayFolder: 5. Sinais de Alerta (Red Flags)
+		lineageTag: 50000000-0000-0000-0000-000000000040
+
+	measure 'Score de Risco Multianual' =
+			VAR _Z = [% Gasto Outliers Z-Score] * 35
+			VAR _FDS = [% Gasto Fim de Semana] * 25
+			VAR _Recesso = [% Gasto Recesso Parlamentar] * 20
+			VAR _Centavos = [% Notas Centavos Zero] * 10
+			VAR _Dez = [% Concentração Fim de Ano] * 10
+			RETURN
+				MIN(100, (_Z + _FDS + _Recesso + _Centavos + _Dez) * 100)
+		formatString: 0.0
+		displayFolder: 5. Sinais de Alerta (Red Flags)
+		lineageTag: 50000000-0000-0000-0000-000000000041
+
+	column IndiceDummy
+		dataType: int64
+		hidden
+		formatString: 0
+		lineageTag: 50000000-0000-0000-0000-000000000042
+		summarizeBy: count
+		isNameInferred
+		sourceColumn: [IndiceDummy]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition _Medidas = calculated
+		mode: import
+		source = ROW("IndiceDummy", 1)

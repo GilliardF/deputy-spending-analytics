@@ -1,0 +1,57 @@
+expression AnoInicial = 2008 meta [IsParameterQuery=true, Type="Number", IsParameterQueryRequired=true]
+	lineageTag: a0000001-0000-0000-0000-000000000001
+
+	annotation PBI_NavigationStepName = Navigation
+	annotation PBI_ResultType = Number
+
+expression AnoFinal = 2026 meta [IsParameterQuery=true, Type="Number", IsParameterQueryRequired=true]
+	lineageTag: a0000002-0000-0000-0000-000000000002
+
+	annotation PBI_NavigationStepName = Navigation
+	annotation PBI_ResultType = Number
+
+expression fxObterDespesasPorAno =
+		let
+			fx = (ano as number) as table =>
+				let
+					caminhoLocal1 = "./data/Ano-" & Text.From(ano) & ".csv",
+					caminhoLocal2 = "../data/Ano-" & Text.From(ano) & ".csv",
+					caminhoLocal3 = "./data/sample/Ano-" & Text.From(ano) & ".csv",
+					arquivoBin = try File.Contents(caminhoLocal1)
+								 otherwise try File.Contents(caminhoLocal2)
+								 otherwise try File.Contents(caminhoLocal3)
+								 otherwise try Web.Contents("https://dadosabertos.camara.leg.br/arquivos/despesas/csv/Ano-" & Text.From(ano) & ".csv")
+								 otherwise Web.Contents("https://www.camara.leg.br/cotas/Ano-" & Text.From(ano) & ".csv.zip"),
+					conteudoCsv = try Csv.Document(arquivoBin, [Delimiter=";", Encoding=65001, QuoteStyle=QuoteStyle.Csv])
+								  otherwise try Csv.Document(arquivoBin, [Delimiter=";", Encoding=1252, QuoteStyle=QuoteStyle.Csv])
+								  otherwise #table({"ideDocumento"}, {}),
+					cabecalho = try Table.PromoteHeaders(conteudoCsv, [PromoteAllScalars=true]) otherwise conteudoCsv,
+					colunasVitais = Table.SelectColumns(cabecalho, {
+						"ideDocumento", "ideCadastro", "nuDeputadoId", "numSubCota", "txtDescricao",
+						"txtCNPJCPF", "txtFornecedor", "txtNumero", "datEmissao", "vlrDocumento",
+						"vlrGlosa", "vlrLiquido", "numMes", "numAno", "urlDocumento"
+					}, MissingField.Ignore),
+					trataId = Table.AddColumn(colunasVitais, "idDeputado", each 
+						if [ideCadastro]? <> null and [ideCadastro]? <> "" then try Number.FromText(Text.Trim([ideCadastro])) otherwise null
+						else if [nuDeputadoId]? <> null and [nuDeputadoId]? <> "" then try Number.FromText(Text.Trim([nuDeputadoId])) otherwise null
+						else null, Int64.Type),
+					filtraValidos = Table.SelectRows(trataId, each [idDeputado] <> null),
+					tipagem = Table.TransformColumns(filtraValidos, {
+						{"numSubCota", each try Number.FromText(_) otherwise 0, Int64.Type},
+						{"ideDocumento", each try Number.FromText(_) otherwise 0, Int64.Type},
+						{"numMes", each try Number.FromText(_) otherwise 0, Int64.Type},
+						{"numAno", each try Number.FromText(_) otherwise ano, Int64.Type},
+						{"vlrDocumento", each try Number.FromText(Text.Replace(Text.From(_), ",", "."), "en-US") otherwise 0, type number},
+						{"vlrGlosa", each try Number.FromText(Text.Replace(Text.From(_), ",", "."), "en-US") otherwise 0, type number},
+						{"vlrLiquido", each try Number.FromText(Text.Replace(Text.From(_), ",", "."), "en-US") otherwise 0, type number}
+					}),
+					trataData = Table.AddColumn(tipagem, "dataDocumento", each 
+						try DateTime.Date(DateTime.FromText(Text.Start([datEmissao], 19)))
+						otherwise #date([numAno], [numMes], 1), type date)
+				in
+					trataData
+		in
+			fx
+	lineageTag: a0000003-0000-0000-0000-000000000003
+
+	annotation PBI_ResultType = Function

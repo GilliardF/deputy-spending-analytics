@@ -1,0 +1,16 @@
+# Python & Ambientes
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# Dados brutos volumosos (mantendo as amostras de validação em data/sample/)
+data/*.csv
+data/*.zip
+!data/sample/*.csv
+
+# Power BI & Fabric temporários e configurações locais da máquina do usuário
+*.pbitemp
+**/SecurityBindings

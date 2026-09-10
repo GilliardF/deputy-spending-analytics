@@ -1,0 +1,51 @@
+table D_Fornecedor
+	lineageTag: 12000000-0000-0000-0000-000000000001
+
+	column cnpjCpfFornecedor
+		dataType: string
+		isKey
+		lineageTag: 12000000-0000-0000-0000-000000000002
+		summarizeBy: none
+		sourceColumn: cnpjCpfFornecedor
+
+	column nomeFornecedor
+		dataType: string
+		lineageTag: 12000000-0000-0000-0000-000000000003
+		summarizeBy: none
+		sourceColumn: nomeFornecedor
+
+	column tipoDocumentoFornecedor
+		dataType: string
+		lineageTag: 12000000-0000-0000-0000-000000000004
+		summarizeBy: none
+		sourceColumn: tipoDocumentoFornecedor
+
+	column flagPessoaFisica
+		dataType: int64
+		formatString: 0
+		lineageTag: 12000000-0000-0000-0000-000000000005
+		summarizeBy: none
+		sourceColumn: flagPessoaFisica
+
+		annotation SummarizationSetBy = Automatic
+
+	partition D_Fornecedor = m
+		mode: import
+		source =
+			let
+			    Fonte = F_Despesas,
+			    seleciona = Table.SelectColumns(Fonte, {"cnpjCpfFornecedor", "nomeFornecedor"}),
+			    removeDuplicados = Table.Distinct(seleciona, {"cnpjCpfFornecedor"}),
+			    filtraValidos = Table.SelectRows(removeDuplicados, each [cnpjCpfFornecedor] <> null and [cnpjCpfFornecedor] <> ""),
+			    addTipo = Table.AddColumn(filtraValidos, "tipoDocumentoFornecedor", each 
+			        let
+			            limpo = Text.Select([cnpjCpfFornecedor], {"0".."9"}),
+			            tam = Text.Length(limpo)
+			        in
+			            if tam = 14 then "Pessoa Jurídica (CNPJ)"
+			            else if tam = 11 then "Pessoa Física (CPF)"
+			            else "Outros / Exterior", type text),
+			    addFlagPF = Table.AddColumn(addTipo, "flagPessoaFisica", each 
+			        if [tipoDocumentoFornecedor] = "Pessoa Física (CPF)" then 1 else 0, Int64.Type)
+			in
+			    addFlagPF

@@ -1,0 +1,179 @@
+table F_Despesas
+	lineageTag: 13000000-0000-0000-0000-000000000001
+
+	column ideDocumento
+		dataType: int64
+		formatString: 0
+		lineageTag: 13000000-0000-0000-0000-000000000002
+		summarizeBy: none
+		sourceColumn: ideDocumento
+
+		annotation SummarizationSetBy = Automatic
+
+	column idDeputado
+		dataType: int64
+		formatString: 0
+		lineageTag: 13000000-0000-0000-0000-000000000003
+		summarizeBy: none
+		sourceColumn: idDeputado
+
+		annotation SummarizationSetBy = Automatic
+
+	column dataDocumento
+		dataType: dateTime
+		formatString: dd/mm/yyyy
+		lineageTag: 13000000-0000-0000-0000-000000000004
+		summarizeBy: none
+		sourceColumn: dataDocumento
+
+		annotation SummarizationSetBy = Automatic
+
+	column idTipoDespesa
+		dataType: int64
+		formatString: 0
+		lineageTag: 13000000-0000-0000-0000-000000000005
+		summarizeBy: none
+		sourceColumn: idTipoDespesa
+
+		annotation SummarizationSetBy = Automatic
+
+	column cnpjCpfFornecedor
+		dataType: string
+		lineageTag: 13000000-0000-0000-0000-000000000006
+		summarizeBy: none
+		sourceColumn: cnpjCpfFornecedor
+
+	column nomeFornecedor
+		dataType: string
+		lineageTag: 13000000-0000-0000-0000-000000000007
+		summarizeBy: none
+		sourceColumn: nomeFornecedor
+
+	column numeroDocumento
+		dataType: string
+		lineageTag: 13000000-0000-0000-0000-000000000008
+		summarizeBy: none
+		sourceColumn: numeroDocumento
+
+	column valorDocumento
+		dataType: decimal
+		formatString: "R$"\ #,##0.00;-"R$"\ #,##0.00;"R$"\ 0.00
+		lineageTag: 13000000-0000-0000-0000-000000000009
+		summarizeBy: sum
+		sourceColumn: valorDocumento
+
+		annotation SummarizationSetBy = Automatic
+
+	column valorGlosa
+		dataType: decimal
+		formatString: "R$"\ #,##0.00;-"R$"\ #,##0.00;"R$"\ 0.00
+		lineageTag: 13000000-0000-0000-0000-000000000010
+		summarizeBy: sum
+		sourceColumn: valorGlosa
+
+		annotation SummarizationSetBy = Automatic
+
+	column valorLiquido
+		dataType: decimal
+		formatString: "R$"\ #,##0.00;-"R$"\ #,##0.00;"R$"\ 0.00
+		lineageTag: 13000000-0000-0000-0000-000000000011
+		summarizeBy: sum
+		sourceColumn: valorLiquido
+
+		annotation SummarizationSetBy = Automatic
+
+	column numMes
+		dataType: int64
+		formatString: 0
+		lineageTag: 13000000-0000-0000-0000-000000000012
+		summarizeBy: none
+		sourceColumn: numMes
+
+		annotation SummarizationSetBy = Automatic
+
+	column numAno
+		dataType: int64
+		formatString: 0
+		lineageTag: 13000000-0000-0000-0000-000000000013
+		summarizeBy: none
+		sourceColumn: numAno
+
+		annotation SummarizationSetBy = Automatic
+
+	column urlDocumento
+		dataType: string
+		dataCategory: WebUrl
+		lineageTag: 13000000-0000-0000-0000-000000000014
+		summarizeBy: none
+		sourceColumn: urlDocumento
+
+	column PrimeiroDigito
+		dataType: int64
+		formatString: 0
+		lineageTag: 13000000-0000-0000-0000-000000000015
+		summarizeBy: none
+		sourceColumn: PrimeiroDigito
+
+		annotation SummarizationSetBy = Automatic
+
+	column FlagFimDeSemana
+		dataType: int64
+		formatString: 0
+		lineageTag: 13000000-0000-0000-0000-000000000016
+		summarizeBy: none
+		sourceColumn: FlagFimDeSemana
+
+		annotation SummarizationSetBy = Automatic
+
+	column FlagUltimos30DiasAno
+		dataType: int64
+		formatString: 0
+		lineageTag: 13000000-0000-0000-0000-000000000017
+		summarizeBy: none
+		sourceColumn: FlagUltimos30DiasAno
+
+		annotation SummarizationSetBy = Automatic
+
+	partition F_Despesas = m
+		mode: import
+		source =
+			let
+			    Inicio = try Number.From(AnoInicial) otherwise 2019,
+			    Fim = try Number.From(AnoFinal) otherwise 2024,
+			    QtdAnos = (Fim - Inicio) + 1,
+			    ListaAnos = List.Numbers(Inicio, if QtdAnos > 0 then QtdAnos else 1),
+			    TabelasPorAno = List.Transform(ListaAnos, each fxObterDespesasPorAno(_)),
+			    Consolida = Table.Combine(TabelasPorAno),
+			    LimpaCampos = Table.TransformColumns(Consolida, {
+			        {"txtCNPJCPF", each if _ = null or Text.Trim(_) = "" then "00.000.000/0000-00" else Text.Trim(_), type text},
+			        {"txtFornecedor", each if _ = null or Text.Trim(_) = "" then "FORNECEDOR NÃO INFORMADO" else Text.Upper(Text.Trim(_)), type text},
+			        {"txtNumero", each if _ = null then "" else Text.Trim(_), type text}
+			    }),
+			    Renomeia = Table.RenameColumns(LimpaCampos, {
+			        {"numSubCota", "idTipoDespesa"},
+			        {"txtCNPJCPF", "cnpjCpfFornecedor"},
+			        {"txtFornecedor", "nomeFornecedor"},
+			        {"txtNumero", "numeroDocumento"},
+			        {"vlrDocumento", "valorDocumento"},
+			        {"vlrGlosa", "valorGlosa"},
+			        {"vlrLiquido", "valorLiquido"}
+			    }),
+			    ColunasFinais = Table.SelectColumns(Renomeia, {
+			        "ideDocumento", "idDeputado", "dataDocumento", "idTipoDespesa",
+			        "cnpjCpfFornecedor", "nomeFornecedor", "numeroDocumento", "valorDocumento",
+			        "valorGlosa", "valorLiquido", "numMes", "numAno", "urlDocumento"
+			    }),
+			    AddBenford = Table.AddColumn(ColunasFinais, "PrimeiroDigito", each 
+			        if [valorLiquido] <= 0 then null
+			        else 
+			            let
+			                str = Text.Select(Number.ToText([valorLiquido], "G", "en-US"), {"1".."9"}),
+			                first = if Text.Length(str) > 0 then Text.Start(str, 1) else null
+			            in
+			                if first <> null then Number.FromText(first) else null, Int64.Type),
+			    AddFDS = Table.AddColumn(AddBenford, "FlagFimDeSemana", each 
+			        if Date.DayOfWeek([dataDocumento], Day.Monday) >= 5 then 1 else 0, Int64.Type),
+			    AddUltimos30 = Table.AddColumn(AddFDS, "FlagUltimos30DiasAno", each 
+			        if Date.Month([dataDocumento]) = 12 then 1 else 0, Int64.Type)
+			in
+			    AddUltimos30

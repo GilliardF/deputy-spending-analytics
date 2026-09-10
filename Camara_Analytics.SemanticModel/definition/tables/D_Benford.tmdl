@@ -1,0 +1,51 @@
+table D_Benford
+	lineageTag: 30000000-0000-0000-0000-000000000001
+
+	column Digito
+		dataType: int64
+		isKey
+		formatString: 0
+		lineageTag: 30000000-0000-0000-0000-000000000002
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Digito]
+
+		annotation SummarizationSetBy = Automatic
+
+	column DigitoTexto
+		dataType: string
+		lineageTag: 30000000-0000-0000-0000-000000000003
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [DigitoTexto]
+		sortByColumn: Digito
+
+	column Probabilidade_Teorica
+		dataType: double
+		formatString: 0.00%
+		lineageTag: 30000000-0000-0000-0000-000000000004
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Probabilidade_Teorica]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition D_Benford = calculated
+		mode: import
+		source =
+			DATATABLE(
+				"Digito", INTEGER,
+				"DigitoTexto", STRING,
+				"Probabilidade_Teorica", DOUBLE,
+				{
+					{ 1, "1", 0.30103 },
+					{ 2, "2", 0.17609 },
+					{ 3, "3", 0.12494 },
+					{ 4, "4", 0.09691 },
+					{ 5, "5", 0.07918 },
+				{ 6, "6", 0.06695 },
+					{ 7, "7", 0.05799 },
+					{ 8, "8", 0.05115 },
+					{ 9, "9", 0.04576 }
+				}
+			)

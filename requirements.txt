@@ -1,9 +1,0 @@
-# Requisitos para deploy no Streamlit Cloud
-streamlit>=1.42.0
-numpy>=2.2.3
-pandas>=2.2.3
-requests>=2.32.3
-plotly-express>=0.4.1
-scikit-learn>=1.0.2
-setuptools
-wheel
